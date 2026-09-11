@@ -19,7 +19,7 @@ from rag.search import load_embeddings
 st.set_page_config(
     page_title="Pakistan Law AI Assistant",
     page_icon="⭐",
-    layout="centered",
+    layout="wide",
 )
 
 DEMO_QUESTIONS = [
@@ -49,6 +49,37 @@ CUSTOM_CSS = """
     [data-testid="stSidebar"] {
         background: #fffdf8;
         border-right: 1px solid rgba(1, 65, 28, 0.14);
+    }
+
+    .stApp [data-testid="stMainBlockContainer"],
+    .stApp .block-container {
+        max-width: 1000px;
+        width: 1000px;
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    [data-testid="stBottomBlockContainer"] {
+        max-width: 1000px !important;
+        width: 1000px;
+        left: auto;
+        right: auto;
+    }
+
+    [data-testid="stChatInput"],
+    [data-testid="stChatInput"] textarea,
+    [data-testid="stChatInput"] > div {
+        max-width: 1000px;
+        width: 100%;
+    }
+
+    @media (max-width: 1100px) {
+        .stApp [data-testid="stMainBlockContainer"],
+        .stApp .block-container,
+        [data-testid="stBottomBlockContainer"] {
+            width: 100%;
+            max-width: 1000px;
+        }
     }
 
     .hero {
@@ -101,9 +132,24 @@ CUSTOM_CSS = """
         background: linear-gradient(90deg, #022613, #01411c 70%, #0b5a30);
         color: #fff;
         border-radius: 14px;
-        padding: 14px 18px;
+        padding: 18px 20px;
         margin-bottom: 18px;
         font-size: 14px;
+    }
+
+    .banner-title {
+        margin: 0 0 8px;
+        font-family: "Cormorant Garamond", serif;
+        font-size: clamp(28px, 4vw, 40px);
+        line-height: 1.1;
+        color: #c9a227;
+        font-weight: 700;
+    }
+
+    .banner p {
+        margin: 0;
+        opacity: 0.95;
+        line-height: 1.55;
     }
 
     .banner strong {
@@ -176,15 +222,31 @@ def password_matches(entered):
         return False
 
 
-def render_admin_panel():
-    expected = get_admin_password()
-    if not expected:
-        st.caption(
-            "Upload sirf admin ke liye hai. Streamlit Secrets ya .env mein "
-            "ADMIN_PASSWORD set karo. Local indexing: python ingest_laws.py"
-        )
-        return
+def render_admin_status():
+    missing = missing_api_keys()
+    if missing:
+        st.error("API keys missing: " + ", ".join(missing))
+        st.caption("Add them in Streamlit Secrets or .env.")
+    else:
+        st.success("API keys loaded")
 
+    try:
+        chunk_count, embedding_count, page_count, docs = knowledge_stats()
+        st.success("Knowledge base ready")
+        st.markdown(f"**Indexed chunks:** {chunk_count}")
+        st.markdown(f"**Pages covered:** {page_count}")
+        st.caption(f"{embedding_count} embeddings loaded")
+        for item in docs:
+            st.caption(
+                f"• {item.get('document_name')} "
+                f"({item.get('chunk_count')} chunks, {item.get('page_count')} pages)"
+            )
+    except Exception as error:
+        st.error("Knowledge base could not be loaded.")
+        st.caption(str(error))
+
+
+def render_admin_panel():
     if not st.session_state.admin_ok:
         entered = st.text_input("Admin password", type="password")
         if st.button("Unlock admin", use_container_width=True):
@@ -195,6 +257,7 @@ def render_admin_panel():
         return
 
     st.success("Admin mode")
+    render_admin_status()
     st.caption("PPC, CrPC ya koi aur PDF yahan upload karo. Constitution dubara process nahi hogi.")
     uploaded = st.file_uploader("Upload PDF", type=["pdf"], label_visibility="collapsed")
     custom_name = st.text_input(
@@ -348,53 +411,31 @@ def main():
     st.markdown(
         """
         <div class="hero">
-            <div>
-                <p class="eyebrow">Islamic Republic of Pakistan</p>
-                <h1>Pakistan Law AI Assistant</h1>
-                <p class="urdu">پاکستان قانون معاون</p>
-            </div>
+            <p class="eyebrow">Islamic Republic of Pakistan</p>
             <div class="flag">★</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
     st.markdown(
-        f"""
+        """
         <div class="banner">
-            Indexed laws: <strong>{html.escape(knowledge_label())}</strong><br>
-            Answers come only from these indexed documents.
+            <h1 class="banner-title">Pakistan Law AI Assistant</h1>
+            <p>
+                Pakistan Law AI Assistant provides legal information for educational
+                purposes only. It does not replace professional legal advice. The system
+                should not invent laws, sections, articles or punishments.
+            </p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
     with st.sidebar:
-        st.markdown("### Pakistan Law AI Assistant")
-        st.caption("Pakistan-focused legal information assistant")
+        st.markdown("### Law books")
+        st.caption(knowledge_label())
 
-        missing = missing_api_keys()
-        if missing:
-            st.error("API keys missing: " + ", ".join(missing))
-            st.caption("Add them in Streamlit Cloud → App settings → Secrets.")
-        else:
-            st.success("API keys loaded")
-
-        try:
-            chunk_count, embedding_count, page_count, docs = knowledge_stats()
-            st.success("Knowledge base ready")
-            st.markdown(f"**Indexed chunks:** {chunk_count}")
-            st.markdown(f"**Pages covered:** {page_count}")
-            st.caption(f"{embedding_count} embeddings loaded")
-            for item in docs:
-                st.caption(
-                    f"• {item.get('document_name')} "
-                    f"({item.get('chunk_count')} chunks, {item.get('page_count')} pages)"
-                )
-        except Exception as error:
-            st.error("Knowledge base could not be loaded.")
-            st.caption(str(error))
-
-        with st.expander("Admin"):
+        with st.expander("Admin", expanded=bool(st.session_state.admin_ok)):
             render_admin_panel()
 
         st.markdown("### Demo questions")
@@ -408,22 +449,10 @@ def main():
             st.session_state.pending_question = ""
             st.rerun()
 
-        st.markdown("---")
-        st.markdown(
-            """
-            <p class="disclaimer">
-                Pakistan Law AI Assistant provides legal information for educational purposes only.
-                It does not replace professional legal advice. The system should
-                not invent laws, sections, articles or punishments.
-            </p>
-            """,
-            unsafe_allow_html=True,
-        )
-
     if not st.session_state.messages:
         st.info(
             "Apna qanooni sawal English ya Urdu mein likhein. "
-            "Assistant indexed Pakistani laws se jawab dega."
+            "Assistant Pakistani laws se jawab dega."
         )
 
     for message in st.session_state.messages:
@@ -444,7 +473,7 @@ def main():
         st.rerun()
 
     st.caption(
-        "This assistant searches indexed law chunks, then answers only from those pages. "
+        "This assistant searches in provided law books, then answers only from those pages. "
         "It is not a substitute for a lawyer or a court."
     )
 
