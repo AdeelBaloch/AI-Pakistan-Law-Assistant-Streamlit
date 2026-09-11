@@ -1,0 +1,44 @@
+{
+  "documents": [
+    {
+      "document_id": "constitution-1973",
+      "document_name": "Constitution of the Islamic Republic of Pakistan, 1973",
+      "source_file": "",
+      "file_hash": "",
+      "chunk_count": 326,
+      "page_count": 240,
+      "indexed_at": "2026-09-11T06:01:05.744252+00:00"
+    },
+    {
+      "document_id": "code-of-criminal-procedure-1898-pdf",
+      "document_name": "Code of Criminal Procedure, 1898",
+      "source_file": "Code of Criminal Procedure 1898.pdf.pdf",
+      "file_hash": "08cf18684b87ad585a6af00b962ce7324456826ee22f9291b6f69a9ee735afb4",
+      "chunk_count": 703,
+      "page_count": 307,
+      "indexed_at": "2026-09-11T06:41:47.280546+00:00"
+    },
+    {
+      "document_id": "pakistan-penal-code-1860-pdf",
+      "document_name": "Pakistan Penal Code, 1860",
+      "source_file": "Pakistan Penal Code 1860.pdf.pdf",
+      "file_hash": "ff2f4748624512e7ff9d810836e3ac11ba95211f52285a27e186e1f3dbd2fda9",
+      "chunk_count": 328,
+      "embedded_count": 328,
+      "page_count": 178,
+      "status": "ready",
+      "indexed_at": "2026-09-11T08:09:30.025158+00:00"
+    },
+    {
+      "document_id": "muslim-family-laws-ordinance-pdf",
+      "document_name": "Muslim Family Laws Ordinance.Pdf",
+      "source_file": "Muslim Family Laws Ordinance.pdf.pdf",
+      "file_hash": "c821bbcd9b3c79e2559d4334398a9a120ed4d266f6fe4deccd8c3047b8260440",
+      "chunk_count": 12,
+      "embedded_count": 12,
+      "page_count": 7,
+      "status": "ready",
+      "indexed_at": "2026-09-11T08:14:39.241536+00:00"
+    }
+  ]
+}

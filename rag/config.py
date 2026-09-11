@@ -18,15 +18,24 @@ if not os.getenv("GROQ_API_KEY") or not os.getenv("GEMINI_API_KEY"):
 
 CHUNKS_FILE = os.path.join(PROJECT_ROOT, "docs", "chunks.json")
 EMBEDDINGS_FILE = os.path.join(PROJECT_ROOT, "docs", "embeddings.json")
+MANIFEST_FILE = os.path.join(PROJECT_ROOT, "docs", "manifest.json")
+PROGRESS_FILE = os.path.join(PROJECT_ROOT, "docs", "ingest_progress.json")
+PDFS_DIR = os.path.join(PROJECT_ROOT, "docs", "pdfs")
 
-TOP_K = 5
+TOP_K = 8
 MIN_SCORE = 0.35
 QUESTION_MIN_LENGTH = 8
 QUESTION_MAX_LENGTH = 1000
 HISTORY_TURNS = 3
-MAX_RETRIES = 3
-RETRY_BACKOFF_SECONDS = (2, 4, 8)
-KNOWLEDGE_BASE_NAME = "Constitution of the Islamic Republic of Pakistan, 1973"
+MAX_RETRIES = 6
+RETRY_BACKOFF_SECONDS = (5, 15, 30, 45, 60, 90)
+CHUNK_SIZE = 500
+CHUNK_OVERLAP = 75
+DEFAULT_DOCUMENT_ID = "constitution-1973"
+DEFAULT_DOCUMENT_NAME = (
+    "Constitution of the Islamic Republic of Pakistan, 1973"
+)
+KNOWLEDGE_BASE_NAME = DEFAULT_DOCUMENT_NAME
 
 
 def _from_streamlit(name):
@@ -82,6 +91,10 @@ def get_groq_api_key():
 
 def get_groq_model():
     return setting("GROQ_MODEL", "openai/gpt-oss-120b")
+
+
+def get_admin_password():
+    return setting("ADMIN_PASSWORD")
 
 
 def missing_api_keys():

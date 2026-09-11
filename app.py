@@ -1,23 +1,33 @@
-import streamlit as st
-
+import hmac
+import html
 import re
 
+import streamlit as st
+
 from rag.assistant import ask_question, validate_question
-from rag.config import KNOWLEDGE_BASE_NAME, missing_api_keys
-from rag.search import load_chunks, load_embeddings
+from rag.config import get_admin_password, missing_api_keys
+from rag.ingest import (
+    index_new_pdfs,
+    index_pdf,
+    indexed_documents,
+    indexed_law_names,
+    pending_pdfs,
+    save_uploaded_pdf,
+)
+from rag.search import load_embeddings
 
 st.set_page_config(
-    page_title="PakLaw AI | Pakistan Law Assistant",
+    page_title="Pakistan Law AI Assistant",
     page_icon="⭐",
     layout="centered",
 )
 
 DEMO_QUESTIONS = [
-    "What is the state religion of Pakistan?",
+    "Mere ghar pe kisi bande ne gundo ke sath qabza kiya hai, mujhe kya karna chahiye?",
     "What does Article 10A say about fair trial?",
-    "Who is the Head of State under the Constitution?",
-    "What are fundamental rights under the Constitution?",
     "Police mujhe warrant ke baghair kab arrest kar sakti hai?",
+    "What are fundamental rights under the Constitution?",
+    "What is the state religion of Pakistan?",
     "Section 144 kya hai?",
 ]
 
@@ -135,17 +145,19 @@ def init_state():
         st.session_state.messages = []
     if "pending_question" not in st.session_state:
         st.session_state.pending_question = ""
+    if "admin_ok" not in st.session_state:
+        st.session_state.admin_ok = False
 
 
 def knowledge_stats():
-    chunks = load_chunks()
-    embeddings = load_embeddings()
-    pages = {
-        item.get("page")
-        for item in chunks.values()
-        if item.get("page") is not None
-    }
-    return len(chunks), len(embeddings), len(pages)
+    docs = [
+        item for item in indexed_documents()
+        if item.get("status", "ready") == "ready"
+    ]
+    chunk_count = sum(int(item.get("chunk_count") or 0) for item in docs)
+    page_count = sum(int(item.get("page_count") or 0) for item in docs)
+    embedding_count = len(load_embeddings())
+    return chunk_count, embedding_count, page_count, docs
 
 
 def public_error(error):
@@ -154,18 +166,115 @@ def public_error(error):
     return text[:300]
 
 
+def password_matches(entered):
+    expected = get_admin_password()
+    if not expected or not entered:
+        return False
+    try:
+        return hmac.compare_digest(entered.encode("utf-8"), expected.encode("utf-8"))
+    except Exception:
+        return False
+
+
+def render_admin_panel():
+    expected = get_admin_password()
+    if not expected:
+        st.caption(
+            "Upload sirf admin ke liye hai. Streamlit Secrets ya .env mein "
+            "ADMIN_PASSWORD set karo. Local indexing: python ingest_laws.py"
+        )
+        return
+
+    if not st.session_state.admin_ok:
+        entered = st.text_input("Admin password", type="password")
+        if st.button("Unlock admin", use_container_width=True):
+            if password_matches(entered):
+                st.session_state.admin_ok = True
+                st.rerun()
+            st.error("Galat password.")
+        return
+
+    st.success("Admin mode")
+    st.caption("PPC, CrPC ya koi aur PDF yahan upload karo. Constitution dubara process nahi hogi.")
+    uploaded = st.file_uploader("Upload PDF", type=["pdf"], label_visibility="collapsed")
+    custom_name = st.text_input(
+        "Law name (optional)",
+        placeholder="Pakistan Penal Code, 1860",
+    )
+    if st.button("Save and index PDF", use_container_width=True, disabled=uploaded is None):
+        if uploaded is None:
+            st.warning("Pehle PDF choose karo.")
+        else:
+            saved_path = save_uploaded_pdf(uploaded)
+            status = st.empty()
+            bar = st.progress(0)
+
+            def report(message, percent=None):
+                status.write(message)
+                if percent is not None:
+                    bar.progress(min(max(int(percent), 0), 100))
+
+            try:
+                result = index_pdf(
+                    saved_path,
+                    document_name=custom_name,
+                    progress=report,
+                )
+                if result.get("status") == "skipped":
+                    st.info("Ye PDF pehle se indexed hai.")
+                else:
+                    doc = result.get("document") or {}
+                    st.success(
+                        f"Indexed: {doc.get('document_name')} "
+                        f"({doc.get('chunk_count')} chunks)"
+                    )
+                st.rerun()
+            except Exception as error:
+                st.error(public_error(error))
+
+    waiting = pending_pdfs()
+    if waiting:
+        st.caption("docs/pdfs mein new files: " + ", ".join(item["filename"] for item in waiting))
+        if st.button("Index pending PDFs", use_container_width=True):
+            status = st.empty()
+            bar = st.progress(0)
+
+            def report(message, percent=None):
+                status.write(message)
+                if percent is not None:
+                    bar.progress(min(max(int(percent), 0), 100))
+
+            try:
+                results = index_new_pdfs(progress=report)
+                st.success(f"{len(results)} document(s) processed.")
+                st.rerun()
+            except Exception as error:
+                st.error(public_error(error))
+
+    if st.button("Lock admin", use_container_width=True):
+        st.session_state.admin_ok = False
+        st.rerun()
+
+
+def knowledge_label():
+    names = indexed_law_names()
+    return " + ".join(names)
+
+
 def render_sources(sources):
     if not sources:
         return
 
-    with st.expander("Document sources", expanded=True):
+    with st.expander("Document sources", expanded=False):
         for source in sources:
             score = float(source.get("score") or 0)
-            preview = (source.get("text") or "").strip()
+            preview = html.escape((source.get("text") or "").strip())
+            law = html.escape(source.get("document_name") or "Indexed law")
             st.markdown(
                 f"""
                 <div class="source-card">
                     <div class="source-meta">
+                        {law} &nbsp;|&nbsp;
                         Chunk {source.get("chunk_id")} &nbsp;|&nbsp;
                         Page {source.get("page")} &nbsp;|&nbsp;
                         Match {score * 100:.1f}%
@@ -237,8 +346,8 @@ def main():
         <div class="hero">
             <div>
                 <p class="eyebrow">Islamic Republic of Pakistan</p>
-                <h1>Pakistan Law Assistant</h1>
-                <p class="urdu">آئین پاکستان معاون</p>
+                <h1>Pakistan Law AI Assistant</h1>
+                <p class="urdu">پاکستان قانون معاون</p>
             </div>
             <div class="flag">★</div>
         </div>
@@ -248,16 +357,16 @@ def main():
     st.markdown(
         f"""
         <div class="banner">
-            Source document: <strong>{KNOWLEDGE_BASE_NAME}</strong><br>
-            Answers are limited to this document only.
+            Indexed laws: <strong>{html.escape(knowledge_label())}</strong><br>
+            Answers come only from these indexed documents.
         </div>
         """,
         unsafe_allow_html=True,
     )
 
     with st.sidebar:
-        st.markdown("### PakLaw AI")
-        st.caption("Pakistan AI Policy & Law Assistant")
+        st.markdown("### Pakistan Law AI Assistant")
+        st.caption("Pakistan-focused legal information assistant")
 
         missing = missing_api_keys()
         if missing:
@@ -267,14 +376,22 @@ def main():
             st.success("API keys loaded")
 
         try:
-            chunk_count, embedding_count, page_count = knowledge_stats()
+            chunk_count, embedding_count, page_count, docs = knowledge_stats()
             st.success("Knowledge base ready")
             st.markdown(f"**Indexed chunks:** {chunk_count}")
             st.markdown(f"**Pages covered:** {page_count}")
             st.caption(f"{embedding_count} embeddings loaded")
+            for item in docs:
+                st.caption(
+                    f"• {item.get('document_name')} "
+                    f"({item.get('chunk_count')} chunks, {item.get('page_count')} pages)"
+                )
         except Exception as error:
             st.error("Knowledge base could not be loaded.")
             st.caption(str(error))
+
+        with st.expander("Admin"):
+            render_admin_panel()
 
         st.markdown("### Demo questions")
         for question in DEMO_QUESTIONS:
@@ -291,7 +408,7 @@ def main():
         st.markdown(
             """
             <p class="disclaimer">
-                PakLaw AI provides legal information for educational purposes only.
+                Pakistan Law AI Assistant provides legal information for educational purposes only.
                 It does not replace professional legal advice. The system should
                 not invent laws, sections, articles or punishments.
             </p>
@@ -302,12 +419,12 @@ def main():
     if not st.session_state.messages:
         st.info(
             "Apna qanooni sawal English ya Urdu mein likhein. "
-            "Assistant Constitution ke indexed pages se jawab dega."
+            "Assistant indexed Pakistani laws se jawab dega."
         )
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
-            st.write(message.get("content") or "")
+            st.markdown(message.get("content") or "")
             if message["role"] == "assistant":
                 render_sources(message.get("sources") or [])
 
@@ -323,7 +440,7 @@ def main():
         st.rerun()
 
     st.caption(
-        "This assistant searches Constitution chunks, then answers only from those pages. "
+        "This assistant searches indexed law chunks, then answers only from those pages. "
         "It is not a substitute for a lawyer or a court."
     )
 
