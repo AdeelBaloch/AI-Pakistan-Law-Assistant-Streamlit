@@ -8,12 +8,12 @@ import requests
 from rag.config import (
     CHUNKS_FILE,
     EMBEDDINGS_FILE,
-    GEMINI_API_KEY,
-    GEMINI_EMBEDDING_MODEL,
     MAX_RETRIES,
     MIN_SCORE,
     RETRY_BACKOFF_SECONDS,
     TOP_K,
+    get_gemini_api_key,
+    get_gemini_embedding_model,
 )
 from rag.similarity import rank_by_similarity
 
@@ -46,19 +46,24 @@ def load_embeddings():
 
 
 def generate_embedding(text):
-    if not GEMINI_API_KEY:
-        raise Exception("GEMINI_API_KEY is missing. Add it to your .env file.")
+    api_key = get_gemini_api_key()
+    model = get_gemini_embedding_model()
+
+    if not api_key:
+        raise Exception(
+            "GEMINI_API_KEY is missing. Add it in Streamlit Secrets or a local .env file."
+        )
 
     url = (
         "https://generativelanguage.googleapis.com/"
-        f"v1beta/models/{GEMINI_EMBEDDING_MODEL}:embedContent"
+        f"v1beta/models/{model}:embedContent"
     )
     headers = {
         "Content-Type": "application/json",
-        "x-goog-api-key": GEMINI_API_KEY,
+        "x-goog-api-key": api_key,
     }
     payload = {
-        "model": f"models/{GEMINI_EMBEDDING_MODEL}",
+        "model": f"models/{model}",
         "content": {"parts": [{"text": text}]},
         "output_dimensionality": 768,
     }

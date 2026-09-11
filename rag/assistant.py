@@ -1,12 +1,12 @@
 import requests
 
 from rag.config import (
-    GROQ_API_KEY,
-    GROQ_MODEL,
     HISTORY_TURNS,
     KNOWLEDGE_BASE_NAME,
     QUESTION_MAX_LENGTH,
     QUESTION_MIN_LENGTH,
+    get_groq_api_key,
+    get_groq_model,
 )
 from rag.search import search
 
@@ -118,17 +118,22 @@ def build_law_prompt(question, chunks, history):
 
 
 def call_groq(system_prompt, user_prompt):
-    if not GROQ_API_KEY:
-        raise Exception("GROQ_API_KEY is missing. Add it to your .env file.")
+    api_key = get_groq_api_key()
+    model = get_groq_model()
+
+    if not api_key:
+        raise Exception(
+            "GROQ_API_KEY is missing. Add it in Streamlit Secrets or a local .env file."
+        )
 
     response = requests.post(
         "https://api.groq.com/openai/v1/chat/completions",
         headers={
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Authorization": f"Bearer {api_key}",
         },
         json={
-            "model": GROQ_MODEL,
+            "model": model,
             "temperature": 0.2,
             "stream": False,
             "messages": [

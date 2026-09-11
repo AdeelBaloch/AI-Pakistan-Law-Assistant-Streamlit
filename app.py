@@ -1,7 +1,9 @@
 import streamlit as st
 
+import re
+
 from rag.assistant import ask_question, validate_question
-from rag.config import KNOWLEDGE_BASE_NAME
+from rag.config import KNOWLEDGE_BASE_NAME, missing_api_keys
 from rag.search import load_chunks, load_embeddings
 
 st.set_page_config(
@@ -146,6 +148,12 @@ def knowledge_stats():
     return len(chunks), len(embeddings), len(pages)
 
 
+def public_error(error):
+    text = str(error or "").strip()
+    text = re.sub(r"(gsk_|AQ\.|Bearer |AIza)[^\s\"']+", "[hidden]", text)
+    return text[:300]
+
+
 def render_sources(sources):
     if not sources:
         return
@@ -193,10 +201,14 @@ def answer_question(question):
         try:
             result = ask_question(question, history=history)
         except Exception as error:
+            detail = public_error(error)
             result = {
                 "success": False,
-                "message": "The assistant could not answer right now. Please try again.",
-                "error": str(error),
+                "message": (
+                    "The assistant could not answer right now. Please try again."
+                    + (f"\n\nDetail: {detail}" if detail else "")
+                ),
+                "error": detail,
                 "sources": [],
             }
 
@@ -246,6 +258,13 @@ def main():
     with st.sidebar:
         st.markdown("### PakLaw AI")
         st.caption("Pakistan AI Policy & Law Assistant")
+
+        missing = missing_api_keys()
+        if missing:
+            st.error("API keys missing: " + ", ".join(missing))
+            st.caption("Add them in Streamlit Cloud → App settings → Secrets.")
+        else:
+            st.success("API keys loaded")
 
         try:
             chunk_count, embedding_count, page_count = knowledge_stats()

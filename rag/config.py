@@ -16,11 +16,6 @@ if not os.getenv("GROQ_API_KEY") or not os.getenv("GEMINI_API_KEY"):
     if os.path.isfile(sibling_env):
         load_dotenv(sibling_env, override=False)
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
-GEMINI_EMBEDDING_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "gemini-embedding-2").strip()
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
-GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b").strip()
-
 CHUNKS_FILE = os.path.join(PROJECT_ROOT, "docs", "chunks.json")
 EMBEDDINGS_FILE = os.path.join(PROJECT_ROOT, "docs", "embeddings.json")
 
@@ -32,3 +27,75 @@ HISTORY_TURNS = 3
 MAX_RETRIES = 3
 RETRY_BACKOFF_SECONDS = (2, 4, 8)
 KNOWLEDGE_BASE_NAME = "Constitution of the Islamic Republic of Pakistan, 1973"
+
+
+def _from_streamlit(name):
+    try:
+        import streamlit as st
+    except Exception:
+        return ""
+
+    try:
+        secrets = st.secrets
+    except Exception:
+        return ""
+
+    try:
+        if name in secrets:
+            return str(secrets[name]).strip()
+    except Exception:
+        pass
+
+    for section in ("api", "general"):
+        try:
+            if section in secrets and name in secrets[section]:
+                return str(secrets[section][name]).strip()
+        except Exception:
+            continue
+
+    return ""
+
+
+def setting(name, default=""):
+    value = os.getenv(name, "").strip()
+    if value:
+        return value
+
+    value = _from_streamlit(name)
+    if value:
+        return value
+
+    return str(default).strip()
+
+
+def get_gemini_api_key():
+    return setting("GEMINI_API_KEY")
+
+
+def get_gemini_embedding_model():
+    return setting("GEMINI_EMBEDDING_MODEL", "gemini-embedding-2")
+
+
+def get_groq_api_key():
+    return setting("GROQ_API_KEY")
+
+
+def get_groq_model():
+    return setting("GROQ_MODEL", "openai/gpt-oss-120b")
+
+
+def missing_api_keys():
+    missing = []
+    if not get_gemini_api_key():
+        missing.append("GEMINI_API_KEY")
+    if not get_groq_api_key():
+        missing.append("GROQ_API_KEY")
+    return missing
+
+
+# Kept for older imports; prefer the getters above so Streamlit Secrets
+# are read at request time, not only on first import.
+GEMINI_API_KEY = get_gemini_api_key()
+GEMINI_EMBEDDING_MODEL = get_gemini_embedding_model()
+GROQ_API_KEY = get_groq_api_key()
+GROQ_MODEL = get_groq_model()

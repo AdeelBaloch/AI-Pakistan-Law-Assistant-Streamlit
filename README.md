@@ -38,6 +38,27 @@ If `.env` is missing, the app can reuse keys from the sibling PHP project:
 
 `C:\laragon\www\php_ai_practice\AI-Pakistan-Law-Assistant\.env`
 
+Do not commit `.env` or API keys to GitHub.
+
+## Streamlit Cloud secrets
+
+On a deployed app, the sibling `.env` file is not available. Add the same keys in Streamlit Cloud:
+
+1. Open the app on [share.streamlit.io](https://share.streamlit.io)
+2. Go to **App settings → Secrets**
+3. Paste this and replace the values with your real keys:
+
+```toml
+GEMINI_API_KEY = "your_gemini_api_key"
+GEMINI_EMBEDDING_MODEL = "gemini-embedding-2"
+GROQ_API_KEY = "your_groq_api_key"
+GROQ_MODEL = "openai/gpt-oss-120b"
+```
+
+4. Save. Streamlit will reboot the app.
+
+After reboot, the sidebar should show **API keys loaded**. If a key is missing, the sidebar will say which one.
+
 ## Run the demo
 
 ```bash
