@@ -82,49 +82,17 @@ CUSTOM_CSS = """
         }
     }
 
-    .hero {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        margin: 8px 0 18px;
-    }
-
-    .eyebrow {
-        margin: 0 0 4px;
-        color: #0d6b38;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        font-size: 12px;
-        font-weight: 700;
-    }
-
-    .hero h1 {
-        margin: 0;
-        font-family: "Cormorant Garamond", serif;
-        font-size: clamp(32px, 5vw, 46px);
-        line-height: 1;
-        color: #022613;
-    }
-
-    .urdu {
-        margin: 8px 0 0;
-        font-family: "Noto Nastaliq Urdu", serif;
-        font-size: 22px;
-        color: #01411c;
-    }
-
     .flag {
         width: 58px;
         height: 58px;
         border-radius: 50%;
-        background: #01411c;
+        background: #022613;
         border: 3px solid #c9a227;
         display: grid;
         place-items: center;
         color: #fff;
         font-size: 26px;
-        box-shadow: 0 8px 24px rgba(1, 65, 28, 0.25);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
         flex-shrink: 0;
     }
 
@@ -137,8 +105,16 @@ CUSTOM_CSS = """
         font-size: 14px;
     }
 
+    .banner-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 8px;
+    }
+
     .banner-title {
-        margin: 0 0 8px;
+        margin: 0;
         font-family: "Cormorant Garamond", serif;
         font-size: clamp(28px, 4vw, 40px);
         line-height: 1.1;
@@ -410,17 +386,11 @@ def main():
 
     st.markdown(
         """
-        <div class="hero">
-            <p class="eyebrow">Islamic Republic of Pakistan</p>
-            <div class="flag">★</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        """
         <div class="banner">
-            <h1 class="banner-title">Pakistan Law AI Assistant</h1>
+            <div class="banner-top">
+                <h1 class="banner-title">Pakistan Law AI Assistant</h1>
+                <div class="flag">★</div>
+            </div>
             <p>
                 Pakistan Law AI Assistant provides legal information for educational
                 purposes only. It does not replace professional legal advice. The system

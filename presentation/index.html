@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pakistan Law AI Assistant — 2 min pitch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --green: #01411c;
+      --deep: #022613;
+      --gold: #c9a227;
+      --paper: #fffdf8;
+      --ink: #1b241c;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #0a1a10;
+      color: var(--ink);
+      font-family: "Source Sans 3", sans-serif;
+    }
+    .deck {
+      height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .slide {
+      display: none;
+      width: min(1100px, 100%);
+      min-height: 620px;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(201, 162, 39, 0.16), transparent 28%),
+        radial-gradient(circle at 90% 0%, rgba(1, 65, 28, 0.18), transparent 32%),
+        linear-gradient(180deg, #eef4ee 0%, #f6f1e4 100%);
+      border-radius: 22px;
+      border: 1px solid rgba(1, 65, 28, 0.14);
+      padding: 48px 56px;
+      box-shadow: 0 24px 60px rgba(0,0,0,.28);
+    }
+    .slide.on { display: block; }
+    .banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      background: linear-gradient(90deg, #022613, #01411c 70%, #0b5a30);
+      color: #fff;
+      border-radius: 14px;
+      padding: 18px 22px;
+      margin-bottom: 28px;
+    }
+    .banner h1 {
+      margin: 0;
+      font-family: "Cormorant Garamond", serif;
+      color: var(--gold);
+      font-size: 42px;
+      line-height: 1.1;
+    }
+    .flag {
+      width: 54px; height: 54px; border-radius: 50%;
+      background: #022613; border: 3px solid var(--gold);
+      display: grid; place-items: center; font-size: 24px; flex-shrink: 0;
+    }
+    h2 {
+      margin: 0 0 16px;
+      font-family: "Cormorant Garamond", serif;
+      font-size: 40px;
+      color: var(--deep);
+    }
+    p, li { font-size: 22px; line-height: 1.45; }
+    .muted { color: #5c675d; font-size: 16px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .card {
+      background: var(--paper);
+      border: 1px solid rgba(1, 65, 28, 0.14);
+      border-radius: 14px;
+      padding: 18px 20px;
+    }
+    .card strong { color: var(--green); }
+    .flow {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+      font-weight: 700; color: var(--green); font-size: 18px;
+    }
+    .flow span {
+      background: #fff; border: 1px solid rgba(1,65,28,.18);
+      border-radius: 999px; padding: 10px 14px;
+    }
+    .arrow { color: var(--gold); font-size: 22px; }
+    .footer {
+      position: fixed; bottom: 18px; left: 0; right: 0;
+      text-align: center; color: #cfe3d3; font-size: 14px;
+    }
+    kbd {
+      background: #14321c; color: #fff; border-radius: 6px;
+      padding: 2px 7px; font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="deck">
+    <section class="slide on" data-n="1">
+      <div class="banner">
+        <h1>Pakistan Law AI Assistant</h1>
+        <div class="flag">★</div>
+      </div>
+      <h2>Pakistani law. Simple questions.</h2>
+      <p>Users ask in English, Urdu, or Roman Urdu. The app retrieves relevant pages from indexed Pakistani law books, then answers with sources.</p>
+      <div class="grid" style="margin-top:28px">
+        <div class="card"><strong>1,369 chunks</strong><br>4 law books indexed</div>
+        <div class="card"><strong>732 pages</strong><br>Constitution, PPC, CrPC, Family Laws</div>
+      </div>
+      <p class="muted" style="margin-top:28px">2–3 minute demo pitch</p>
+    </section>
+
+    <section class="slide" data-n="2">
+      <div class="banner">
+        <h1>The problem</h1>
+        <div class="flag">★</div>
+      </div>
+      <h2>The law is long. The question is simple.</h2>
+      <ul>
+        <li>Pakistani statutes are lengthy — finding the right article or section takes time.</li>
+        <li>People ask in everyday language: “Someone occupied my house. What should I do?”</li>
+        <li>A general web search rarely returns the exact document, section, and page.</li>
+      </ul>
+    </section>
+
+    <section class="slide" data-n="3">
+      <div class="banner">
+        <h1>The solution</h1>
+        <div class="flag">★</div>
+      </div>
+      <h2>A RAG chatbot — it retrieves, it does not invent.</h2>
+      <div class="flow">
+        <span>PDF laws</span><span class="arrow">→</span>
+        <span>Chunks + embeddings</span><span class="arrow">→</span>
+        <span>Semantic search</span><span class="arrow">→</span>
+        <span>LLM answer + sources</span>
+      </div>
+      <div class="grid" style="margin-top:28px">
+        <div class="card"><strong>Gemini</strong><br>Query embeddings (768-d)</div>
+        <div class="card"><strong>Groq</strong><br>Answers only from retrieved text</div>
+      </div>
+    </section>
+
+    <section class="slide" data-n="4">
+      <div class="banner">
+        <h1>Law books</h1>
+        <div class="flag">★</div>
+      </div>
+      <h2>What is indexed today</h2>
+      <ul>
+        <li>Constitution of Pakistan, 1973 — 326 chunks, 240 pages</li>
+        <li>Pakistan Penal Code, 1860 — 328 chunks, 178 pages</li>
+        <li>Code of Criminal Procedure, 1898 — 703 chunks, 307 pages</li>
+        <li>Muslim Family Laws Ordinance — 12 chunks, 7 pages</li>
+      </ul>
+      <p>Adding a new book is dynamic: an admin uploads a PDF, and chunks plus embeddings are created. Already indexed laws are not processed again.</p>
+    </section>
+
+    <section class="slide" data-n="5">
+      <div class="banner">
+        <h1>Live demo</h1>
+        <div class="flag">★</div>
+      </div>
+      <h2>Three questions, 60 seconds</h2>
+      <div class="card" style="margin-bottom:14px"><strong>1.</strong> What are fundamental rights under the Constitution?</div>
+      <div class="card" style="margin-bottom:14px"><strong>2.</strong> Someone occupied my house with armed men. What should I do?</div>
+      <div class="card"><strong>3.</strong> What is Section 144? <span class="muted">— answered from CrPC, with sources</span></div>
+      <p class="muted">Answers are point-by-point, with article or section citations. Sources show the law name, page, and match score.</p>
+    </section>
+
+    <section class="slide" data-n="6">
+      <div class="banner">
+        <h1>Safety and close</h1>
+        <div class="flag">★</div>
+      </div>
+      <h2>This is not a lawyer. It is information from indexed books.</h2>
+      <ul>
+        <li>If a section or punishment is not in the index, the system must not invent it.</li>
+        <li>Random or meaningless input is rejected.</li>
+        <li>PDF upload is admin-only.</li>
+      </ul>
+      <p style="margin-top:28px"><strong>Pakistan Law AI Assistant</strong> — Pakistani laws, searchable in your language, with sources.</p>
+    </section>
+  </div>
+  <div class="footer">← → or Space &nbsp;|&nbsp; F fullscreen &nbsp;|&nbsp; <span id="pos">1 / 6</span></div>
+  <script>
+    const slides = [...document.querySelectorAll(".slide")];
+    let i = 0;
+    function show(n) {
+      i = (n + slides.length) % slides.length;
+      slides.forEach((s, idx) => s.classList.toggle("on", idx === i));
+      document.getElementById("pos").textContent = (i + 1) + " / " + slides.length;
+    }
+    document.addEventListener("keydown", (e) => {
+      if (["ArrowRight", " ", "PageDown"].includes(e.key)) { e.preventDefault(); show(i + 1); }
+      if (["ArrowLeft", "PageUp"].includes(e.key)) { e.preventDefault(); show(i - 1); }
+      if (e.key === "f" || e.key === "F") document.documentElement.requestFullscreen?.();
+    });
+    document.querySelector(".deck").addEventListener("click", (e) => {
+      if (e.target.closest("a")) return;
+      show(i + (e.clientX > innerWidth / 2 ? 1 : -1));
+    });
+  </script>
+</body>
+</html>

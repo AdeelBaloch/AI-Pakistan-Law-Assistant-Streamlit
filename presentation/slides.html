@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pakistan Law AI Assistant — Presentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --green: #01411c;
+      --deep: #022613;
+      --gold: #c9a227;
+      --paper: #fffdf8;
+      --ink: #1b241c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: #fff;
+      color: var(--ink);
+      font-family: "Source Sans 3", "Segoe UI", sans-serif;
+    }
+    .slide {
+      width: 1122px;
+      height: 794px;
+      page-break-after: always;
+      break-after: page;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(201, 162, 39, 0.16), transparent 28%),
+        radial-gradient(circle at 90% 0%, rgba(1, 65, 28, 0.18), transparent 32%),
+        linear-gradient(180deg, #eef4ee 0%, #f6f1e4 100%);
+      padding: 42px 52px;
+      position: relative;
+      overflow: hidden;
+    }
+    .slide:last-child { page-break-after: auto; break-after: auto; }
+    .banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(90deg, #022613, #01411c 70%, #0b5a30);
+      color: #fff;
+      border-radius: 14px;
+      padding: 18px 22px;
+      margin-bottom: 28px;
+    }
+    .banner h1 {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      color: var(--gold);
+      font-size: 38px;
+      line-height: 1.1;
+      font-weight: 700;
+    }
+    .flag {
+      width: 50px; height: 50px; border-radius: 50%;
+      background: #022613; border: 3px solid var(--gold);
+      display: grid; place-items: center; font-size: 22px; flex-shrink: 0;
+      color: var(--gold);
+    }
+    h2 {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 36px;
+      color: var(--deep);
+      margin-bottom: 18px;
+    }
+    p, li { font-size: 22px; line-height: 1.45; }
+    ul { padding-left: 28px; }
+    li { margin-bottom: 10px; }
+    .muted { color: #5c675d; font-size: 16px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .card {
+      background: var(--paper);
+      border: 1px solid rgba(1, 65, 28, 0.14);
+      border-radius: 14px;
+      padding: 18px 20px;
+    }
+    .card strong { color: var(--green); }
+    .flow {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+      font-weight: 700; color: var(--green); font-size: 18px;
+      margin-bottom: 8px;
+    }
+    .flow span {
+      background: #fff; border: 1px solid rgba(1,65,28,.18);
+      border-radius: 999px; padding: 10px 14px;
+    }
+    .arrow { color: var(--gold); font-size: 22px; border: none !important; background: none !important; padding: 0 !important; }
+    .page-no {
+      position: absolute;
+      right: 52px;
+      bottom: 28px;
+      color: #5c675d;
+      font-size: 14px;
+    }
+    @page {
+      size: A4 landscape;
+      margin: 0;
+    }
+    @media print {
+      html, body { background: #fff; }
+      .slide {
+        width: 297mm;
+        height: 210mm;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="slide">
+    <div class="banner">
+      <h1>Pakistan Law AI Assistant</h1>
+      <div class="flag">★</div>
+    </div>
+    <h2>Pakistani law. Simple questions.</h2>
+    <p>Users ask in English, Urdu, or Roman Urdu. The app retrieves relevant pages from indexed Pakistani law books, then answers with sources.</p>
+    <div class="grid" style="margin-top:36px">
+      <div class="card"><strong>1,369 chunks</strong><br>4 law books indexed</div>
+      <div class="card"><strong>732 pages</strong><br>Constitution, PPC, CrPC, Family Laws</div>
+    </div>
+    <p class="muted" style="margin-top:36px">2–3 minute demo pitch</p>
+    <div class="page-no">1 / 6</div>
+  </section>
+
+  <section class="slide">
+    <div class="banner">
+      <h1>The problem</h1>
+      <div class="flag">★</div>
+    </div>
+    <h2>The law is long. The question is simple.</h2>
+    <ul>
+      <li>Pakistani statutes are lengthy — finding the right article or section takes time.</li>
+      <li>People ask in everyday language: “Someone occupied my house. What should I do?”</li>
+      <li>A general web search rarely returns the exact document, section, and page.</li>
+    </ul>
+    <div class="page-no">2 / 6</div>
+  </section>
+
+  <section class="slide">
+    <div class="banner">
+      <h1>The solution</h1>
+      <div class="flag">★</div>
+    </div>
+    <h2>A RAG chatbot — it retrieves, it does not invent.</h2>
+    <div class="flow">
+      <span>PDF laws</span><span class="arrow">→</span>
+      <span>Chunks + embeddings</span><span class="arrow">→</span>
+      <span>Semantic search</span><span class="arrow">→</span>
+      <span>LLM answer + sources</span>
+    </div>
+    <div class="grid" style="margin-top:36px">
+      <div class="card"><strong>Gemini</strong><br>Query embeddings (768-d)</div>
+      <div class="card"><strong>Groq</strong><br>Answers only from retrieved text</div>
+    </div>
+    <div class="page-no">3 / 6</div>
+  </section>
+
+  <section class="slide">
+    <div class="banner">
+      <h1>Law books</h1>
+      <div class="flag">★</div>
+    </div>
+    <h2>What is indexed today</h2>
+    <ul>
+      <li>Constitution of Pakistan, 1973 — 326 chunks, 240 pages</li>
+      <li>Pakistan Penal Code, 1860 — 328 chunks, 178 pages</li>
+      <li>Code of Criminal Procedure, 1898 — 703 chunks, 307 pages</li>
+      <li>Muslim Family Laws Ordinance — 12 chunks, 7 pages</li>
+    </ul>
+    <p style="margin-top:24px">Adding a new book is dynamic: an admin uploads a PDF, and chunks plus embeddings are created. Already indexed laws are not processed again.</p>
+    <div class="page-no">4 / 6</div>
+  </section>
+
+  <section class="slide">
+    <div class="banner">
+      <h1>Live demo</h1>
+      <div class="flag">★</div>
+    </div>
+    <h2>Three questions, 60 seconds</h2>
+    <div class="card" style="margin-bottom:16px"><strong>1.</strong> What are fundamental rights under the Constitution?</div>
+    <div class="card" style="margin-bottom:16px"><strong>2.</strong> Someone occupied my house with armed men. What should I do?</div>
+    <div class="card"><strong>3.</strong> What is Section 144? <span class="muted">— answered from CrPC, with sources</span></div>
+    <p class="muted" style="margin-top:28px">Answers are point-by-point, with article or section citations. Sources show the law name, page, and match score.</p>
+    <div class="page-no">5 / 6</div>
+  </section>
+
+  <section class="slide">
+    <div class="banner">
+      <h1>Safety and close</h1>
+      <div class="flag">★</div>
+    </div>
+    <h2>This is not a lawyer. It is information from indexed books.</h2>
+    <ul>
+      <li>If a section or punishment is not in the index, the system must not invent it.</li>
+      <li>Random or meaningless input is rejected.</li>
+      <li>PDF upload is admin-only.</li>
+    </ul>
+    <p style="margin-top:32px"><strong>Pakistan Law AI Assistant</strong> — Pakistani laws, searchable in your language, with sources.</p>
+    <div class="page-no">6 / 6</div>
+  </section>
+</body>
+</html>
