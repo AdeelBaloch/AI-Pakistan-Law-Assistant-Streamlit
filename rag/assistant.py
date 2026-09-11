@@ -1,3 +1,6 @@
+import re
+from collections import Counter
+
 import requests
 
 from rag.config import (
@@ -8,6 +11,68 @@ from rag.config import (
     get_groq_model,
 )
 from rag.search import search
+
+INVALID_QUESTION_MESSAGE = (
+    "Yeh koi proper qanooni sawal nahi lagta. "
+    "English ya Urdu/Roman Urdu mein clear sawal likhein, "
+    "jaise: Section 144 kya hai? ya Article 10A ke baare mein batao."
+)
+KEYBOARD_ROWS = ("qwertyuiop", "asdfghjkl", "zxcvbnm")
+
+
+def _wild_casing(word):
+    if len(word) < 6:
+        return False
+    flips = 0
+    for first, second in zip(word, word[1:]):
+        if first.isalpha() and second.isalpha() and first.isupper() != second.isupper():
+            flips += 1
+    return flips >= 3
+
+
+def _is_keyboard_smash(word):
+    lowered = word.lower()
+    return any(lowered in row or row in lowered for row in KEYBOARD_ROWS)
+
+
+def looks_like_real_question(question):
+    urdu_chars = len(re.findall(r"[\u0600-\u06FF]", question))
+    if urdu_chars >= 6:
+        return True
+
+    letters = sum(char.isalpha() for char in question)
+    punctuation = sum(
+        (not char.isalnum() and not char.isspace())
+        for char in question
+    )
+    if letters and punctuation / max(len(question), 1) > 0.25:
+        return False
+
+    tokens = re.findall(r"[A-Za-z]+|[\u0600-\u06FF]+", question)
+    tokens = [token for token in tokens if len(token) >= 2]
+    if len(tokens) < 2:
+        return False
+
+    lowered = [token.lower() for token in tokens]
+    most_common_count = Counter(lowered).most_common(1)[0][1]
+    if most_common_count >= 3 and most_common_count / len(lowered) >= 0.5:
+        return False
+
+    latin_words = [token for token in tokens if re.fullmatch(r"[A-Za-z]+", token)]
+    if latin_words:
+        with_vowel = sum(
+            1 for word in latin_words
+            if re.search(r"[aeiouAEIOU]", word)
+        )
+        if with_vowel / len(latin_words) < 0.4:
+            return False
+        smash_count = sum(1 for word in latin_words if _is_keyboard_smash(word))
+        if smash_count and smash_count / len(latin_words) >= 0.5:
+            return False
+        if sum(_wild_casing(word) for word in latin_words) >= 1 and with_vowel <= 1:
+            return False
+
+    return True
 
 
 def validate_question(question):
@@ -31,6 +96,9 @@ def validate_question(question):
 
     if not any(char.isalpha() for char in question):
         raise ValueError("Please write the question in English or Urdu.")
+
+    if not looks_like_real_question(question):
+        raise ValueError(INVALID_QUESTION_MESSAGE)
 
     return question
 

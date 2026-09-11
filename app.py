@@ -287,6 +287,12 @@ def render_sources(sources):
 
 
 def answer_question(question):
+    raw_question = question if isinstance(question, str) else ""
+    st.session_state.messages.append({
+        "role": "user",
+        "content": " ".join(raw_question.strip().split()),
+    })
+
     try:
         question = validate_question(question)
     except ValueError as error:
@@ -297,8 +303,6 @@ def answer_question(question):
             "error": True,
         })
         return
-
-    st.session_state.messages.append({"role": "user", "content": question})
 
     history = [
         message
