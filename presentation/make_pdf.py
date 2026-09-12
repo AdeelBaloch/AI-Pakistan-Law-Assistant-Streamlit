@@ -21,6 +21,34 @@ WHITE = (1, 1, 1)
 TITLE_FONT = str(FONTS / "georgiab.ttf")
 BODY_FONT = str(FONTS / "segoeui.ttf")
 BODY_BOLD = str(FONTS / "segoeuib.ttf")
+TOTAL = 9
+
+TEAM = [
+    {
+        "name": "Adeel Ahmed Baloch",
+        "email": "designer.baloch2015@gmail.com",
+        "linkedin": "https://www.linkedin.com/in/adeel-ahmed-baloch/",
+        "phone": "03134657427",
+    },
+    {
+        "name": "Saqib Ahmed",
+        "email": "saqibkorejo3@gmail.com",
+        "linkedin": "https://www.linkedin.com/in/saqib-ahmed-korejo/",
+        "phone": "03043795397",
+    },
+    {
+        "name": "Muhammad Taha Ansari",
+        "email": "ansaritaha106@gmail.com",
+        "linkedin": "https://www.linkedin.com/in/taha-ansari-03a779228/",
+        "phone": "0334-3896978",
+    },
+    {
+        "name": "Abdul Sami",
+        "email": "khansami0315@gmail.com",
+        "linkedin": "https://www.linkedin.com/in/abdul-sami0315/",
+        "phone": "03152649345",
+    },
+]
 
 
 def draw_star(page, cx, cy, r_out=9, r_in=3.8):
@@ -128,18 +156,96 @@ def new_page(doc):
 
 def footer(page, n):
     page.insert_text(
-        (W - 70, H - 22),
-        f"{n} / 6",
+        (W - 78, H - 22),
+        f"{n} / {TOTAL}",
         fontfile=BODY_FONT,
         fontsize=11,
         color=MUTED,
     )
 
 
+def linkedin_label(url):
+    return url.replace("https://www.", "").replace("https://", "").rstrip("/")
+
+
+def add_uri(page, x, y, text, uri, fontfile, size, color):
+    font = pymupdf.Font(fontfile=fontfile)
+    width = font.text_length(text, fontsize=size)
+    page.insert_text((x, y), text, fontfile=fontfile, fontsize=size, color=color)
+    page.insert_link(
+        {
+            "kind": pymupdf.LINK_URI,
+            "from": pymupdf.Rect(x, y - size, x + width, y + 4),
+            "uri": uri,
+        }
+    )
+
+
+def member_card(page, rect, member):
+    page.draw_rect(rect, color=(0.75, 0.82, 0.76), fill=PAPER, width=0.6)
+    x = rect.x0 + 16
+    page.insert_text((x, rect.y0 + 28), member["name"], fontfile=BODY_BOLD, fontsize=15, color=GREEN)
+    add_uri(
+        page,
+        x,
+        rect.y0 + 52,
+        member["email"],
+        f"mailto:{member['email']}",
+        BODY_FONT,
+        11.5,
+        INK,
+    )
+    add_uri(
+        page,
+        x,
+        rect.y0 + 74,
+        linkedin_label(member["linkedin"]),
+        member["linkedin"],
+        BODY_FONT,
+        11,
+        GREEN,
+    )
+    page.insert_text((x, rect.y0 + 96), member["phone"], fontfile=BODY_FONT, fontsize=12, color=INK)
+
+
 def build():
     doc = pymupdf.open()
 
-    # 1. Title
+    # 1. Welcome
+    page = new_page(doc)
+    banner(page, "Pakistan Law AI Assistant")
+    page.insert_text((40, 220), "Welcome", fontfile=TITLE_FONT, fontsize=64, color=DEEP)
+    page.insert_text(
+        (40, 270),
+        "Thank you for joining this demo.",
+        fontfile=BODY_FONT,
+        fontsize=20,
+        color=INK,
+    )
+    page.insert_text(
+        (40, 320),
+        "Pakistani law. Simple questions. Answers with sources.",
+        fontfile=BODY_FONT,
+        fontsize=16,
+        color=MUTED,
+    )
+    footer(page, 1)
+
+    # 2. Team
+    page = new_page(doc)
+    banner(page, "Participate Team Members")
+    heading(page, "The team behind this project")
+    boxes = [
+        pymupdf.Rect(40, 148, 470, 300),
+        pymupdf.Rect(490, 148, 920, 300),
+        pymupdf.Rect(40, 318, 470, 470),
+        pymupdf.Rect(490, 318, 920, 470),
+    ]
+    for rect, member in zip(boxes, TEAM):
+        member_card(page, rect, member)
+    footer(page, 2)
+
+    # 3. Title
     page = new_page(doc)
     banner(page, "Pakistan Law AI Assistant")
     y = heading(page, "Pakistani law. Simple questions.")
@@ -152,9 +258,9 @@ def build():
     card(page, pymupdf.Rect(40, 290, 460, 400), "1,369 chunks", "4 law books indexed")
     card(page, pymupdf.Rect(480, 290, 920, 400), "732 pages", "Constitution, PPC, CrPC, Family Laws")
     page.insert_text((40, 450), "2-3 minute demo pitch", fontfile=BODY_FONT, fontsize=13, color=MUTED)
-    footer(page, 1)
+    footer(page, 3)
 
-    # 2. Problem
+    # 4. Problem
     page = new_page(doc)
     banner(page, "The problem")
     y = heading(page, "The law is long. The question is simple.")
@@ -168,9 +274,9 @@ def build():
         y + 24,
         size=17,
     )
-    footer(page, 2)
+    footer(page, 4)
 
-    # 3. Solution
+    # 5. Solution
     page = new_page(doc)
     banner(page, "The solution")
     y = heading(page, "A RAG chatbot - it retrieves, it does not invent.")
@@ -188,9 +294,9 @@ def build():
             x += 26
     card(page, pymupdf.Rect(40, 250, 460, 380), "Gemini", "Query embeddings (768-d)")
     card(page, pymupdf.Rect(480, 250, 920, 380), "Groq", "Answers only from retrieved text")
-    footer(page, 3)
+    footer(page, 5)
 
-    # 4. Law books
+    # 6. Law books
     page = new_page(doc)
     banner(page, "Law books")
     y = heading(page, "What is indexed today")
@@ -211,9 +317,9 @@ def build():
         y + 8,
         size=15,
     )
-    footer(page, 4)
+    footer(page, 6)
 
-    # 5. Demo
+    # 7. Demo
     page = new_page(doc)
     banner(page, "Live demo")
     y = heading(page, "Three questions, 60 seconds")
@@ -235,9 +341,9 @@ def build():
         fontsize=13,
         color=MUTED,
     )
-    footer(page, 5)
+    footer(page, 7)
 
-    # 6. Close
+    # 8. Close
     page = new_page(doc)
     banner(page, "Safety and close")
     y = heading(page, "This is not a lawyer. It is information from indexed books.")
@@ -258,7 +364,27 @@ def build():
         fontsize=15,
         color=GREEN,
     )
-    footer(page, 6)
+    footer(page, 8)
+
+    # 9. Thank you
+    page = new_page(doc)
+    banner(page, "Pakistan Law AI Assistant")
+    page.insert_text((40, 210), "Thank you", fontfile=TITLE_FONT, fontsize=64, color=DEEP)
+    page.insert_text(
+        (40, 270),
+        "Questions are welcome.",
+        fontfile=BODY_FONT,
+        fontsize=22,
+        color=INK,
+    )
+    page.insert_text(
+        (40, 330),
+        "Adeel Ahmed Baloch  |  Saqib Ahmed  |  Muhammad Taha Ansari  |  Abdul Sami",
+        fontfile=BODY_FONT,
+        fontsize=13,
+        color=MUTED,
+    )
+    footer(page, 9)
 
     doc.save(OUT, garbage=4, deflate=True, clean=True)
     doc.close()

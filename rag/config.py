@@ -3,7 +3,18 @@ import os
 from dotenv import load_dotenv
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
+load_dotenv(os.path.join(PROJECT_ROOT, ".env"), interpolate=False)
+
+# If ADMIN_PASSWORD is not in .env, reuse the demo value from .env.example.
+if not os.getenv("ADMIN_PASSWORD"):
+    _example = os.path.join(PROJECT_ROOT, ".env.example")
+    if os.path.isfile(_example):
+        from dotenv import dotenv_values
+
+        _example_values = dotenv_values(_example, interpolate=False)
+        _demo_password = str(_example_values.get("ADMIN_PASSWORD") or "").strip()
+        if _demo_password:
+            os.environ["ADMIN_PASSWORD"] = _demo_password
 
 # Local demo fallback: reuse keys from the original PHP project if this
 # Streamlit folder does not have its own .env yet.

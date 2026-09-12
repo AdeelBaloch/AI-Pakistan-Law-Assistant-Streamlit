@@ -17,7 +17,34 @@ INVALID_QUESTION_MESSAGE = (
     "English ya Urdu/Roman Urdu mein clear sawal likhein, "
     "jaise: Section 144 kya hai? ya Article 10A ke baare mein batao."
 )
+OFF_TOPIC_MESSAGE = (
+    "Yeh Pakistan Law AI Assistant hai, hisab ya general sawalon ka jawab "
+    "yahan nahi milta. Koi qanooni sawal poochhein, jaise: Section 144 kya hai?"
+)
 KEYBOARD_ROWS = ("qwertyuiop", "asdfghjkl", "zxcvbnm")
+LEGAL_HINTS = (
+    "section", "article", "dafa", "qanoon", "qanun", "law", "ppc", "crpc",
+    "constitution", "fir", "police", "court", "adalat", "saza", "qaid",
+    "arrest", "warrant", "nikah", "talaq", "qabza", "ghar", "zameen",
+    "shadi", "biwi", "shohar", "penal", "ordinance", "ain", "jail",
+    "jurmana", "fine", "chori", "murder", "zina", "rights", "haq",
+    "fundamental", "crpc", "ppc", "family", "property", "makan",
+)
+ARITHMETIC_HINTS = re.compile(
+    r"kitn[aeiy]+\s*(hue|hote|hain|hota|ho[ae]|huwe)|"
+    r"\b(plus|minus|add|sum|total|jama|times|multiply|divide|minus)\b",
+    re.IGNORECASE,
+)
+NUMBER_RE = re.compile(r"(?:\d|[\u06F0-\u06F9])+")
+NON_LEGAL_REPLY_RE = re.compile(
+    r"معذرت|صرف قانونی|قانونی سوال|قانونی استفسار|"
+    r"only (?:answer|handle) legal|not a legal question|"
+    r"qanooni sawal|hisab ya general|"
+    r"I (?:can|could) only (?:answer|provide)|"
+    r"do not answer (?:non-)?legal|"
+    r"testing purpose",
+    re.IGNORECASE,
+)
 
 
 def _wild_casing(word):
@@ -33,6 +60,32 @@ def _wild_casing(word):
 def _is_keyboard_smash(word):
     lowered = word.lower()
     return any(lowered in row or row in lowered for row in KEYBOARD_ROWS)
+
+
+def has_legal_hint(question):
+    text = question.lower()
+    if re.search(r"\b(section|article|dafa)\s*\d", text, re.IGNORECASE):
+        return True
+    if re.search(r"\b\d+[a-z]\b", text, re.IGNORECASE):
+        return True
+    return any(hint in text for hint in LEGAL_HINTS)
+
+
+def looks_like_arithmetic(question):
+    if has_legal_hint(question):
+        return False
+    if re.search(r"(?:\d|[\u06F0-\u06F9])+\s*[+\-x×*/]\s*(?:\d|[\u06F0-\u06F9])+", question):
+        return True
+    numbers = NUMBER_RE.findall(question)
+    if len(numbers) >= 2 and ARITHMETIC_HINTS.search(question):
+        return True
+    if len(numbers) >= 2 and re.search(r"kitn[aeiy]+", question, re.IGNORECASE):
+        return True
+    return False
+
+
+def is_non_legal_reply(answer):
+    return bool(NON_LEGAL_REPLY_RE.search(answer or ""))
 
 
 def looks_like_real_question(question):
@@ -75,6 +128,49 @@ def looks_like_real_question(question):
     return True
 
 
+def repair_mixed_script(text):
+    """Keep English terms whole so Urdu RTL sentences do not start mid-word."""
+    replacements = (
+        (r"آرbitration\s*Council", "Arbitration Council"),
+        (r"آرbitration", "Arbitration"),
+        (r"آرbitrator", "Arbitrator"),
+        (r"کنstitution", "Constitution"),
+        (r"سیکtion", "Section"),
+        (r"آرticle", "Article"),
+    )
+    for pattern, repl in replacements:
+        text = re.sub(pattern, repl, text, flags=re.IGNORECASE)
+    text = re.sub(r"([\u0600-\u06FF])([A-Za-z])", r"\1 \2", text)
+    text = re.sub(r"([A-Za-z])([\u0600-\u06FF])", r"\1 \2", text)
+    return re.sub(r"[ \t]{2,}", " ", text)
+
+
+MUKHTASAR_HEADING_RE = re.compile(
+    r"^(?:\*\*|###|#)?\s*[\u200e\u200f\u2066\u2067\u2068\u2069]*"
+    r"(Mukhtas[ae]r\s+jawab|Brief\s+answer|مختصر\s*جواب)"
+    r"[\u200e\u200f\u2066\u2067\u2068\u2069]*\s*(?:\*\*)?\s*[:：\-—–]?\s*",
+    re.IGNORECASE,
+)
+
+
+def split_mukhtasar_heading(text):
+    stripped = (text or "").lstrip()
+    match = MUKHTASAR_HEADING_RE.match(stripped)
+    if not match:
+        return False, text or ""
+    rest = stripped[match.end():].lstrip(" \t\r")
+    rest = rest.lstrip("\n")
+    return True, rest
+
+
+def format_mukhtasar_heading(text):
+    """Force 'Mukhtasar jawab :' on its own line, answer on the next line."""
+    found, rest = split_mukhtasar_heading(text)
+    if not found:
+        return text
+    return "Mukhtasar jawab :\n" + rest
+
+
 def validate_question(question):
     if not isinstance(question, str):
         raise ValueError("Invalid question.")
@@ -99,6 +195,9 @@ def validate_question(question):
 
     if not looks_like_real_question(question):
         raise ValueError(INVALID_QUESTION_MESSAGE)
+
+    if looks_like_arithmetic(question):
+        raise ValueError(OFF_TOPIC_MESSAGE)
 
     return question
 
@@ -203,29 +302,46 @@ def build_law_prompt(question, chunks, history):
         "(Constitution, PPC, CrPC, or any other indexed law).\n\n"
         "VOICE AND LANGUAGE\n"
         "- Reply in the same language as the user: English, Urdu, or Roman Urdu.\n"
-        "- Sound like a clear, helpful Pakistani explainer, not a textbook.\n"
+        "- Sound calm, respectful, and clear — like a careful legal information guide, "
+        "not a textbook and not casual street talk.\n"
         "- Never write citations like [Excerpt 1 | Page 27]. Cite the law name plus "
-        "Article or Section number, for example Constitution Article 24 or PPC Section 448.\n\n"
+        "Article or Section number, for example Constitution Article 24 or PPC Section 448.\n"
+        "- Do not use informal labels such as 'Seedha jawab'. Use courteous headings.\n"
+        "- URDU SCRIPT RULES: If the reply is in Urdu (Arabic script), write complete "
+        "Urdu sentences. Never split an English word across two scripts "
+        "(wrong: آرbitration Council). Either keep the full English term in Latin letters "
+        "as one unit (Arbitration Council, Section 6, PPC) or use a complete Urdu phrase "
+        "(ثالثی کونسل). Do not place English in the middle of an Urdu word.\n\n"
         "ANSWER SHAPE\n"
-        "If the user describes a real situation (qabza, gunda, arrest, crime, property), use:\n"
-        "1) Seedha jawab — 1 or 2 lines.\n"
-        "2) Related law — name the article/section and what it means in simple words.\n"
-        "3) Point by point — possible charges, what the other person may face, and "
-        "what the user can do next, but ONLY if those sections and punishments are "
-        "actually in the excerpts.\n"
-        "4) Limit — if a charge or jail term is not in the excerpts, say that this "
-        "point is not in the currently indexed documents. Do not guess years or sections.\n"
-        "5) Short reminder — this is information, not a court judgment or lawyer advice.\n\n"
-        "If the user asks about a specific article or section, explain THAT provision:\n"
-        "- Title in simple words\n"
-        "- What it gives or requires\n"
-        "- When it applies in daily life\n"
-        "- Punishment or limit if the excerpt states it\n\n"
+        "Keep the respectful wording. Always use this structure:\n"
+        "1) Start exactly like this, heading on its own line, answer on the next line:\n"
+        "   Mukhtasar jawab :\n"
+        "   <one or two respectful lines, never on the same line as the heading>\n"
+        "   Do not write 'Mukhtasar jawab: text'. After the colon, always press Enter.\n"
+        "2) A GitHub-style markdown TABLE of the cited law. Required columns:\n"
+        "   | Section / Article | Reference book | Details |\n"
+        "   Section / Article = exact number, e.g. Section 6 or Article 24.\n"
+        "   Reference book = full law name, e.g. Muslim Family Laws Ordinance "
+        "or Pakistan Penal Code, 1860.\n"
+        "   Details = what that provision says, in simple words, including "
+        "punishment only if it is in the excerpts.\n"
+        "   One row per provision. Never invent a row. If a point is not in "
+        "the excerpts, omit that row.\n"
+        "3) Practical next steps / Aghla iqdamat — only if the user described "
+        "a real situation, and only from the excerpts.\n"
+        "4) Important note — this is general legal information, not a court "
+        "judgment and not a substitute for a lawyer.\n\n"
+        "If the user asks about a specific article or section, still start with "
+        "the brief answer, then the same table for that provision.\n\n"
         "RULES\n"
         "- Use only the excerpts. Do not invent articles, sections, amendments, "
         "case law, charges, or punishments.\n"
         "- If the excerpts do not cover the point, say so plainly.\n"
-        "- Keep it attractive: short headings, numbered points, bold article/section names."
+        "- If the user asks arithmetic, riddles, or anything that is not Pakistani law, "
+        "do not interpret numbers as punishments or sections. Say you only answer legal questions.\n"
+        "- Keep it attractive: brief answer, then the markdown table, then next "
+        "steps. Do not collapse the answer into one paragraph. Always include "
+        "the table when any section or article is cited."
     )
 
     user_prompt = (
@@ -234,7 +350,12 @@ def build_law_prompt(question, chunks, history):
         f"{context}\n\n"
         "QUESTION:\n"
         f"{question}\n\n"
-        "Write a practical, point-by-point answer from these excerpts only. "
+        "Write a practical answer from these excerpts only. "
+        "Start with this heading on its own line:\n"
+        "Mukhtasar jawab :\n"
+        "Then put the brief answer on the next line. "
+        "Then a markdown table with columns "
+        "Section / Article, Reference book, and Details. "
         "Cite law name + Article/Section, not excerpt labels. "
         "Use the recent conversation only to understand follow-ups, not as a source of law."
     )
@@ -281,7 +402,7 @@ def call_groq(system_prompt, user_prompt):
     if not answer or not answer.strip():
         raise Exception("Groq returned an empty answer.")
 
-    return answer.strip()
+    return format_mukhtasar_heading(repair_mixed_script(answer.strip()))
 
 
 def ask_question(question, history=None):
@@ -309,6 +430,8 @@ def ask_question(question, history=None):
         }
         for chunk in chunks
     ]
+    if is_non_legal_reply(answer):
+        sources = []
 
     return {
         "success": True,

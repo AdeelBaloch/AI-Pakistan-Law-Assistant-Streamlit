@@ -53,32 +53,45 @@ CUSTOM_CSS = """
 
     .stApp [data-testid="stMainBlockContainer"],
     .stApp .block-container {
-        max-width: 1000px;
-        width: 1000px;
-        padding-left: 16px;
-        padding-right: 16px;
+        max-width: 1000px !important;
+        width: 100% !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        padding-left: 16px !important;
+        padding-right: 16px !important;
     }
 
+    [data-testid="stBottom"],
     [data-testid="stBottomBlockContainer"] {
         max-width: 1000px !important;
-        width: 1000px;
-        left: auto;
-        right: auto;
+        width: 100% !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        left: 0 !important;
+        right: 0 !important;
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+
+    [data-testid="stMain"] [data-testid="stBottom"] {
+        display: flex !important;
+        justify-content: center !important;
     }
 
     [data-testid="stChatInput"],
-    [data-testid="stChatInput"] textarea,
-    [data-testid="stChatInput"] > div {
-        max-width: 1000px;
-        width: 100%;
+    [data-testid="stChatInput"] > div,
+    [data-testid="stChatInput"] textarea {
+        max-width: 100% !important;
+        width: 100% !important;
     }
 
     @media (max-width: 1100px) {
         .stApp [data-testid="stMainBlockContainer"],
         .stApp .block-container,
+        [data-testid="stBottom"],
         [data-testid="stBottomBlockContainer"] {
-            width: 100%;
-            max-width: 1000px;
+            width: 100% !important;
+            max-width: 1000px !important;
         }
     }
 
@@ -157,6 +170,105 @@ CUSTOM_CSS = """
         background: #fffdf8;
         border: 1px solid rgba(1, 65, 28, 0.10);
         border-radius: 16px;
+        max-width: 100%;
+        overflow-x: hidden;
+        box-sizing: border-box;
+    }
+
+    [data-testid="stChatMessage"] [data-testid="stChatMessageContent"],
+    [data-testid="stChatMessage"] [data-testid="stMarkdown"],
+    [data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] {
+        min-width: 0;
+        max-width: 100%;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        box-sizing: border-box;
+    }
+
+    [data-testid="stMarkdownContainer"] {
+        margin-right: 7px;
+    }
+
+    .answer-heading {
+        direction: ltr !important;
+        text-align: left !important;
+        unicode-bidi: isolate;
+        font-family: "Source Sans 3", sans-serif !important;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #01411c;
+        margin: 0 0 10px;
+        max-width: 100%;
+    }
+
+    .urdu-flag {
+        display: none;
+    }
+
+    [data-testid="stChatMessage"]:has(.urdu-flag) [data-testid="stMarkdown"]:not(:has(.answer-heading)) {
+        direction: rtl;
+        text-align: right;
+        padding-right: 12px;
+        padding-left: 8px;
+        overflow-x: hidden;
+        max-width: 100%;
+    }
+
+    [data-testid="stChatMessage"] [data-testid="stMarkdown"] p,
+    [data-testid="stChatMessage"] [data-testid="stMarkdown"] li {
+        font-size: 1.05rem;
+        max-width: 100%;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    [data-testid="stChatMessage"]:has(.urdu-flag) [data-testid="stMarkdown"] p,
+    [data-testid="stChatMessage"]:has(.urdu-flag) [data-testid="stMarkdown"] li {
+        font-family: "Noto Nastaliq Urdu", "Source Sans 3", serif;
+        font-size: 1.05rem;
+        line-height: 2.2;
+        text-align: right;
+        max-width: 100%;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    [data-testid="stChatMessage"] table {
+        direction: ltr;
+        width: 100%;
+        max-width: 100%;
+        table-layout: fixed;
+        border-collapse: collapse;
+        margin: 14px 0 18px;
+        font-family: "Noto Nastaliq Urdu", "Source Sans 3", serif;
+        font-size: 1.05rem;
+        line-height: 2;
+        background: #fffdf8;
+    }
+
+    [data-testid="stChatMessage"] th {
+        background: #01411c;
+        color: #c9a227;
+        text-align: left;
+        padding: 10px 12px;
+        font-size: 1.05rem;
+        font-weight: 700;
+        font-family: "Source Sans 3", sans-serif;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    [data-testid="stChatMessage"] td {
+        border: 1px solid rgba(1, 65, 28, 0.14);
+        padding: 10px 12px;
+        text-align: left;
+        vertical-align: top;
+        unicode-bidi: plaintext;
+        font-size: 1.05rem;
+        line-height: 2;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 </style>
 """
@@ -180,6 +292,71 @@ def knowledge_stats():
     page_count = sum(int(item.get("page_count") or 0) for item in docs)
     embedding_count = len(load_embeddings())
     return chunk_count, embedding_count, page_count, docs
+
+
+def looks_urdu(text):
+    return len(re.findall(r"[\u0600-\u06FF]", text or "")) >= 8
+
+
+def is_non_legal_reply(text):
+    return bool(
+        re.search(
+            r"معذرت|صرف قانونی|قانونی سوال|قانونی استفسار|"
+            r"only (?:answer|handle) legal|not a legal question|"
+            r"qanooni sawal|hisab ya general",
+            text or "",
+            re.IGNORECASE,
+        )
+    )
+
+
+MUKHTASAR_HEADING_RE = re.compile(
+    r"^(?:\*\*|###|#)?\s*"
+    r"(Mukhtas[ae]r\s+jawab|Brief\s+answer|مختصر\s*جواب)"
+    r"\s*(?:\*\*)?\s*[:：\-—–]?\s*",
+    re.IGNORECASE,
+)
+
+
+def split_mukhtasar_heading(text):
+    stripped = (text or "").lstrip()
+    match = MUKHTASAR_HEADING_RE.match(stripped)
+    if not match:
+        return False, text or ""
+    rest = stripped[match.end():].lstrip(" \t\r")
+    rest = rest.lstrip("\n")
+    return True, rest
+
+
+def isolate_latin_terms(text):
+    lines = []
+    pattern = re.compile(
+        r"[A-Za-z][A-Za-z0-9.'/-]*(?:[^\S\n]+[A-Za-z][A-Za-z0-9.'/-]*)*"
+    )
+    for line in (text or "").split("\n"):
+        if line.strip().startswith("|"):
+            lines.append(line)
+        else:
+            lines.append(
+                pattern.sub(lambda match: f"\u2066{match.group(0)}\u2069", line)
+            )
+    return "\n".join(lines)
+
+
+def render_message_text(text):
+    text = text or ""
+    has_heading, body = split_mukhtasar_heading(text)
+    if has_heading:
+        st.markdown(
+            '<p class="answer-heading">Mukhtasar jawab :</p>',
+            unsafe_allow_html=True,
+        )
+        text = body
+    if looks_urdu(text):
+        st.markdown('<span class="urdu-flag"></span>', unsafe_allow_html=True)
+        st.markdown(isolate_latin_terms(text))
+        return
+    st.markdown(text)
 
 
 def public_error(error):
@@ -427,8 +604,12 @@ def main():
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
-            st.markdown(message.get("content") or "")
-            if message["role"] == "assistant":
+            render_message_text(message.get("content") or "")
+            if (
+                message["role"] == "assistant"
+                and not message.get("error")
+                and not is_non_legal_reply(message.get("content") or "")
+            ):
                 render_sources(message.get("sources") or [])
 
     pending = st.session_state.pending_question
